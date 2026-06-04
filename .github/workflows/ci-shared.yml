@@ -54,7 +54,7 @@ jobs:
       - run: npm ci
       - run: ${{ inputs.test-command }}
       
-      # Étape de test pour valider le masquage du secret (Critère du Palier 3)
+      # valider le masquage du secret
       - name: Vérification du masquage du secret
         run: echo "Le secret API est $API_KEY"
         env:
