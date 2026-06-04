@@ -24,11 +24,6 @@ on:
       target-env:
         type: string
         default: 'staging'
-    
-    # Déclaration du secret exigé par le Palier 3
-    secrets:
-      STAGING_API_KEY:
-        required: true
 
 jobs:
   lint:
@@ -39,7 +34,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
-          cache: 'npm' # Piège classique évité !
+          cache: 'npm' 
       - run: npm ci
       - run: npm run lint
 
@@ -47,7 +42,7 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
     
-    # On lie l'environnement de staging ici pour avoir accès aux secrets
+    # accès aux secrets
     environment: ${{ inputs.target-env }}
     
     steps:
