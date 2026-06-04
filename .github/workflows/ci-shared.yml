@@ -1,0 +1,84 @@
+name: Shared Node CI
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        default: '22.x'
+      test-command:
+        type: string
+        default: 'npm test'
+      run-build:
+        type: boolean
+        default: true
+      build-command:
+        type: string
+        default: 'npm run build'
+      artifact-name:
+        type: string
+        default: 'app-dist'
+      artifact-path:
+        type: string
+        default: 'dist/'
+      target-env:
+        type: string
+        default: 'staging'
+    
+    # Déclaration du secret exigé par le Palier 3
+    secrets:
+      STAGING_API_KEY:
+        required: true
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm' # Piège classique évité !
+      - run: npm ci
+      - run: npm run lint
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    # On lie l'environnement de staging ici pour avoir accès aux secrets
+    environment: ${{ inputs.target-env }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+      - run: npm ci
+      - run: ${{ inputs.test-command }}
+      
+      # Étape de test pour valider le masquage du secret (Critère du Palier 3)
+      - name: Vérification du masquage du secret
+        run: echo "Le secret API est $API_KEY"
+        env:
+          API_KEY: ${{ secrets.STAGING_API_KEY }}
+
+  build:
+    name: Build & Artifact
+    if: ${{ inputs.run-build == true }}
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+      - run: npm ci
+      - run: ${{ inputs.build-command }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
